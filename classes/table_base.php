@@ -41,14 +41,17 @@ class TableBase
         return DynamoUtil::addTablePrefix($this->tableName);
     }
 
-    public function create($tput = 1)
+    public function create($read_tput = 1, $write_tput = 1)
     {
         $opts = array(
             'TableName' => $this->tableName,
             'KeySchema' => $this->keySchema,
             'AttributeDefinitions' => $this->attributeDefinitions,
-            'ProvisionedThroughput' => $tput,
-            'wait' => true,
+            'ProvisionedThroughput' => array(
+                'ReadCapacityUnits' => $read_tput,
+                'WriteCapacityUnits' => $write_tput,
+            ),
+            'wait' => false,
             );
         DynamoUtil::createTable($opts);
     }
@@ -119,8 +122,10 @@ class TableBase
         $put = array(
             'TableName' => $this->getRealTableName(),
             'Item' => $this->dynamodb->formatAttributes($vals),
+            'ReturnValues' => 'ALL_OLD',
             );
         $result = $this->dynamodb->putItem($put);
+        return $result;
     }
 
     public function get($keys, $options = null)
@@ -152,6 +157,7 @@ class TableBase
         $params = array(
             'TableName' => $this->getRealTableName(),
             'Key' => $this->getKeyParams($keys),
+            'ReturnValues' => 'UPDATED_NEW',
             );
 
         // build attributes
